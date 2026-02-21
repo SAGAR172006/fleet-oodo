@@ -64,6 +64,8 @@ export default function Dashboard() {
   const [driverAsc, setDriverAsc] = useState(false);
   const [toast, setToast] = useState("");
 
+  const [cargo, setCargo] = useState([]);
+
   useEffect(() => {
     if (!user?.businessKey) return;
     const bk = user.businessKey;
@@ -76,13 +78,17 @@ export default function Dashboard() {
       query(collection(db, "maintenance"), where("businessKey", "==", bk)),
       (snap) => setMaintenance(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
+    const unsubCargo = onSnapshot(
+      query(collection(db, "cargo"), where("businessKey", "==", bk)),
+      (snap) => setCargo(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    );
 
-    return () => { unsubTrips(); unsubMaint(); };
+    return () => { unsubTrips(); unsubMaint(); unsubCargo(); };
   }, [user]);
 
   const activeFleet  = trips.filter((t) => t.status === "on trip").length;
-  const maintAlert   = maintenance.filter((m) => m.status === "Scheduled" || m.status === "In Progress").length;
-  const pendingCargo = trips.filter((t) => t.cargoStatus === "unassigned").length;
+  const maintAlert   = maintenance.filter((m) => m.status !== "Resolved").length;
+  const pendingCargo = cargo.filter((c) => !c.tripId).length;
 
   const sortedTrips = sortTrips(trips, statusCycle, driverAsc);
 
