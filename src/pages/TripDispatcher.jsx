@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import AppShell from "../components/AppShell";
 import {
-  collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs, serverTimestamp,
+  collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs, serverTimestamp, runTransaction,
 } from "firebase/firestore";
 import { db } from "../firebase";
 
@@ -83,11 +83,14 @@ export default function TripDispatcher() {
       if (editId) {
         await updateDoc(doc(db, "trips", editId), data);
       } else {
-        const snap = await getDocs(query(collection(db, "trips"), where("businessKey", "==", user.businessKey)));
-        data.tripNumber = snap.size + 1;
-        data.dispatcherId = user.userId;
-        data.createdAt = serverTimestamp();
-        await addDoc(collection(db, "trips"), data);
+        await runTransaction(db, async (transaction) => {
+          const snap = await getDocs(query(collection(db, "trips"), where("businessKey", "==", user.businessKey)));
+          data.tripNumber = snap.size + 1;
+          data.dispatcherId = user.userId;
+          data.createdAt = serverTimestamp();
+          const newRef = doc(collection(db, "trips"));
+          transaction.set(newRef, data);
+        });
       }
       setShowModal(false);
     } catch (e) { setError(e.message); }

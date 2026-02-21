@@ -61,7 +61,7 @@ export default function Analytics() {
 
   const monthlyExpenses = {};
   expenses.forEach((e) => {
-    if (!e.date) return;
+    if (!e.date || typeof e.date !== "string" || !/^\d{4}-\d{2}/.test(e.date)) return;
     const month = e.date.slice(0, 7);
     monthlyExpenses[month] = (monthlyExpenses[month] || 0) + (Number(e.amount) || 0);
   });
