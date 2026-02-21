@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+
+# Environment variables — NEVER commit these
+.env
+.env.local
+.env.production
+backend/.env
+
+# Firebase service account — NEVER commit this
+backend/serviceAccountKey.json
+
+# Build output
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
