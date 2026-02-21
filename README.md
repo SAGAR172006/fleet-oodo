@@ -1,9 +1,5 @@
 # 🚛 FleetFlow — Modular Fleet & Logistics Management System
 
-<p align="center">
-  <strong>fleet</strong><span style="color:#16a34a"><strong>flow</strong></span>
-</p>
-
 A full-stack, modular fleet and logistics management web application built with **React**, **Node.js/Express**, and **Firebase (Firestore)**. FleetFlow provides role-based dashboards for fleet managers, dispatchers, safety officers, and finance analysts to manage vehicles, trips, maintenance, expenses, driver performance, and analytics — all in real-time.
 
 ---
@@ -70,7 +66,7 @@ fleet-oodo/
 │   ├── routes/
 │   │   ├── auth.js              # Register, login, business key validation
 │   │   └── users.js             # User ID availability check
-│   ├── firebase.js              # Firebase Admin SDK initialization
+│   ├── firebase-admin.js        # Firebase Admin SDK initialization
 │   ├── business-keys.json       # Valid business keys for registration
 │   ├── server.js                # Express server entry point
 │   ├── package.json
@@ -162,7 +158,7 @@ npm install
 cd ..
 ```
 
-> **Note:** The `bcrypt` package requires native compilation. If you run into build errors, see [Troubleshooting](#bcrypt-native-module-build-failure).
+> **Note:** The `bcrypt` package requires native compilation. If you run into build errors, see [Troubleshooting](#2-bcrypt-native-module-build-failure).
 
 ---
 
@@ -170,9 +166,11 @@ cd ..
 
 #### Frontend — `src/firebase.js`
 
+The file already contains Firebase config values. If you are using your own Firebase project:
+
 1. Go to [Firebase Console](https://console.firebase.google.com/) → your project → **Project Settings** → **Your Apps** (Web app).
 2. Copy the Firebase config object.
-3. Replace the placeholder values in `src/firebase.js` with your actual Firebase config:
+3. Replace the values in `src/firebase.js` with your actual Firebase config:
 
 ```javascript
 const firebaseConfig = {
@@ -189,7 +187,7 @@ const firebaseConfig = {
 
 1. Go to [Firebase Console](https://console.firebase.google.com/) → your project → **Project Settings** → **Service Accounts**.
 2. Click **Generate New Private Key** and download the JSON file.
-3. Place the file in the `backend/` folder (e.g., `backend/fleet-33608-f60c8e3dd340.json`).
+3. Rename it to `fleet-33608-f60c8e3dd340.json` (or update the path in `backend/firebase-admin.js`) and place it in the `backend/` folder.
 
 > **🔐 NEVER commit this file to Git.** It is already listed in `.gitignore`.
 
@@ -197,7 +195,7 @@ Alternatively, set up environment variables (see [Environment Variables](#-envir
 
 #### Business Keys — `backend/business-keys.json`
 
-Add valid business key strings to `backend/business-keys.json` to allow user registration:
+Add valid business key strings to `backend/business-keys.json` to allow user registration with that key:
 
 ```json
 ["BK-FLEET-001", "BK-FLEET-002", "BK-FLEET-003", "BK-DEMO-999"]
@@ -308,7 +306,7 @@ npm uninstall bcrypt
 npm install bcryptjs
 ```
 
-Then update all `require("bcrypt")` references in backend code to `require("bcryptjs")`. The API is identical.
+Then update `require("bcrypt")` to `require("bcryptjs")` in `backend/routes/auth.js`. The API is identical.
 
 ---
 
@@ -504,4 +502,4 @@ This project is for educational/demonstration purposes.
 
 <p align="center">
   Built with ❤️ using React, Express & Firebase
-</p> `validKeys` array to allow user registration with that key.
+</p>
