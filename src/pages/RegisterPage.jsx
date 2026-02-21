@@ -34,7 +34,7 @@ export default function RegisterPage() {
     setUserIdStatus("checking");
     const timer = setTimeout(async () => {
       try {
-        const res = await axios.get(`/api/users/check-id?userId=${userId.trim()}`);
+        const res = await axios.get(`/api/users/check-userid?userId=${userId.trim()}`);
         setUserIdStatus(res.data.available ? "available" : "taken");
       } catch {
         setUserIdStatus("idle");

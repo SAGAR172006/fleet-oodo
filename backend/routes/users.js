@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const { db } = require("../firebase");
+const { db } = require("../firebase-admin");
 
-// GET /api/users/check-id?userId=xxx
-router.get("/check-id", async (req, res) => {
+// GET /api/users/check-userid?userId=xxx
+router.get("/check-userid", async (req, res) => {
   const { userId } = req.query;
   if (!userId) return res.json({ available: false });
 

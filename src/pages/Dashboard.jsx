@@ -59,10 +59,10 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const [trips, setTrips] = useState([]);
-  const [cargo, setCargo] = useState([]);
   const [maintenance, setMaintenance] = useState([]);
   const [statusCycle, setStatusCycle] = useState(0);
   const [driverAsc, setDriverAsc] = useState(false);
+  const [toast, setToast] = useState("");
 
   useEffect(() => {
     if (!user?.businessKey) return;
@@ -72,23 +72,40 @@ export default function Dashboard() {
       query(collection(db, "trips"), where("businessKey", "==", bk)),
       (snap) => setTrips(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
-    const unsubCargo = onSnapshot(
-      query(collection(db, "cargo"), where("businessKey", "==", bk)),
-      (snap) => setCargo(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    );
     const unsubMaint = onSnapshot(
       query(collection(db, "maintenance"), where("businessKey", "==", bk)),
       (snap) => setMaintenance(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
 
-    return () => { unsubTrips(); unsubCargo(); unsubMaint(); };
+    return () => { unsubTrips(); unsubMaint(); };
   }, [user]);
 
   const activeFleet  = trips.filter((t) => t.status === "on trip").length;
-  const maintAlert   = maintenance.filter((m) => m.status !== "Resolved").length;
-  const pendingCargo = cargo.filter((c) => !c.tripId).length;
+  const maintAlert   = maintenance.filter((m) => m.status === "Scheduled" || m.status === "In Progress").length;
+  const pendingCargo = trips.filter((t) => t.cargoStatus === "unassigned").length;
 
   const sortedTrips = sortTrips(trips, statusCycle, driverAsc);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(""), 3000);
+  };
+
+  const handleNewTrip = () => {
+    if (user?.role === "Dispatcher") {
+      navigate("/trip-dispatcher?action=new");
+    } else {
+      showToast("Only Dispatchers can create trips.");
+    }
+  };
+
+  const handleNewVehicle = () => {
+    if (user?.role === "Fleet Manager") {
+      navigate("/vehicle-registry?action=new");
+    } else {
+      showToast("Only Fleet Managers can register vehicles.");
+    }
+  };
 
   const handleStatusSort = () => {
     setDriverAsc(false);
@@ -105,6 +122,11 @@ export default function Dashboard() {
   return (
     <AppShell>
       <div className="max-w-7xl mx-auto px-6 py-8">
+        {toast && (
+          <div className="fixed top-4 right-4 z-50 bg-gray-800 text-white text-sm px-4 py-2 rounded-lg shadow-lg">
+            {toast}
+          </div>
+        )}
 
         <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
           <div>
@@ -114,11 +136,11 @@ export default function Dashboard() {
             </p>
           </div>
           <div className="flex gap-3">
-            <button onClick={() => navigate("/trip-dispatcher")} className="btn-outlined text-sm">
-              + New Trip
+            <button onClick={handleNewTrip} className="btn-outlined text-sm">
+              ＋ New Trip
             </button>
-            <button onClick={() => navigate("/vehicle-registry")} className="btn-outlined text-sm">
-              + New Vehicle
+            <button onClick={handleNewVehicle} className="btn-outlined text-sm">
+              ＋ New Vehicle
             </button>
           </div>
         </div>

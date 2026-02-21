@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import AppShell from "../components/AppShell";
+import { useSearchParams } from "react-router-dom";
 import {
   collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp,
 } from "firebase/firestore";
@@ -28,11 +29,18 @@ const EMPTY_FORM = {
 
 export default function VehicleRegistry() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [vehicles, setVehicles] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (searchParams.get("action") === "new") {
+      setEditId(null); setForm(EMPTY_FORM); setError(""); setShowModal(true);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!user?.businessKey) return;

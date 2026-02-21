@@ -3,10 +3,10 @@ const router = express.Router();
 const bcrypt = require("bcrypt");
 const fs = require("fs");
 const path = require("path");
-const { db } = require("../firebase");
+const { db } = require("../firebase-admin");
 
 const keysFile = path.join(__dirname, "../business-keys.json");
-const { validKeys } = JSON.parse(fs.readFileSync(keysFile, "utf-8"));
+const validKeys = JSON.parse(fs.readFileSync(keysFile, "utf-8"));
 
 // POST /api/auth/validate-key
 router.post("/validate-key", (req, res) => {
