@@ -1,10 +1,1 @@
-{
-  "validKeys": [
-    "FLEET001",
-    "FLEET002",
-    "DEMO2026",
-    "BIZ-ALPHA-2024",
-    "BIZ-BETA-2024",
-    "BIZ-GAMMA-2024"
-  ]
-}
+["BK-FLEET-001", "BK-FLEET-002", "BK-FLEET-003", "BK-DEMO-999"]
