@@ -13,8 +13,8 @@ export default function Navbar({ onSidebarOpen }) {
   return (
     <nav className="fixed top-0 left-0 right-0 z-40 h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm">
       <div className="flex items-center gap-1">
-        <span className="text-gray-800 font-bold text-lg">fleet</span>
-        <span className="text-green-500 font-bold text-lg">flow</span>
+        <span className="text-green-600 font-bold text-lg">fleet</span>
+        <span className="text-gray-800 font-bold text-lg">flow</span>
       </div>
       <div className="flex items-center gap-4">
         {user && (
