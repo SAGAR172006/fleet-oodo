@@ -228,6 +228,19 @@ Open your browser at: **http://localhost:5173**
 
 ---
 
+### 6. Seed Sample Data (Optional)
+
+To populate the database with realistic demo data:
+
+```bash
+cd backend
+npm run seed
+```
+
+This creates 4 demo users, 5 vehicles, 6 trips, 4 maintenance records, 8 expenses, and 4 drivers. See [SAMPLE_DATA.md](SAMPLE_DATA.md) for full details and login credentials.
+
+---
+
 ## 🔑 Environment Variables
 
 ### Backend (`backend/.env`)
@@ -481,6 +494,21 @@ cd backend && npm install && cd ..
 | POST   | `/api/auth/login`               | Login with userId, password, role   |
 | POST   | `/api/auth/validate-key`        | Validate a business key             |
 | GET    | `/api/users/check-userid?userId=` | Check if a user ID is available   |
+
+---
+
+## 📸 Screenshots
+
+> See [SAMPLE_DATA.md](SAMPLE_DATA.md) for the full screenshot gallery and quick-start walkthrough.
+
+### Dashboard — Fleet Manager
+![Dashboard](screenshots/03-dashboard-fleet-manager.png)
+
+### Vehicle Registry
+![Vehicle Registry](screenshots/04-vehicle-registry.png)
+
+### Analytics
+![Analytics](screenshots/09-analytics.png)
 
 ---
 
