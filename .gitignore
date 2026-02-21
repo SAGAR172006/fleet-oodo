@@ -10,6 +10,7 @@ backend/.env
 
 # Firebase service account — NEVER commit this
 backend/serviceAccountKey.json
+backend/fleet-33608-f60c8e3dd340.json
 
 # Build output
 dist/

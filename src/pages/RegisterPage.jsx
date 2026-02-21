@@ -100,10 +100,13 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8">
+      <div className="fixed top-4 left-6">
+        <span className="text-green-600 font-bold text-xl">fleet</span>
+        <span className="text-gray-800 font-bold text-xl">flow</span>
+      </div>
       <div className="card w-full max-w-md">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">FleetFlow</h1>
-          <p className="text-gray-500 text-sm mt-1">Create your account</p>
+          <h1 className="text-2xl font-bold text-gray-800">Register User</h1>
         </div>
 
         <form onSubmit={handleRegister} className="space-y-4">
@@ -232,14 +235,14 @@ export default function RegisterPage() {
             className={!isFormValid || loading ? "btn-disabled w-full" : "btn-primary w-full"}
             disabled={!isFormValid || loading}
           >
-            {loading ? "Registering…" : "Create Account"}
+            {loading ? "Registering…" : "Register"}
           </button>
         </form>
 
         <p className="text-center text-sm text-gray-500 mt-4">
-          Already have an account?{" "}
+          Already a user?{" "}
           <Link to="/login" className="text-green-600 hover:underline font-medium">
-            Sign In
+            Login
           </Link>
         </p>
       </div>
