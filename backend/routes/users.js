@@ -1,10 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const { getDb } = require("../mongo");
+const { normalizeSafeKey } = require("../utils/validation");
 
 // GET /api/users/check-userid?userId=xxx
 router.get("/check-userid", async (req, res) => {
-  const { userId } = req.query;
+  const userId = normalizeSafeKey(req.query?.userId);
   if (!userId) return res.json({ available: false });
 
   try {

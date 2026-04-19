@@ -4,13 +4,14 @@ const bcrypt = require("bcrypt");
 const fs = require("fs");
 const path = require("path");
 const { getDb } = require("../mongo");
+const { normalizeRole, normalizeSafeKey } = require("../utils/validation");
 
 const keysFile = path.join(__dirname, "../business-keys.json");
 const validKeys = JSON.parse(fs.readFileSync(keysFile, "utf-8"));
 
 // POST /api/auth/validate-key
 router.post("/validate-key", (req, res) => {
-  const { businessKey } = req.body;
+  const businessKey = normalizeSafeKey(req.body?.businessKey);
   if (!businessKey) return res.json({ valid: false });
 
   res.json({ valid: validKeys.includes(businessKey) });
@@ -20,7 +21,13 @@ router.post("/validate-key", (req, res) => {
 router.post("/register", async (req, res) => {
   try {
     const db = getDb();
-    const { username, userId, role, businessKey, password, licenseId, licenseExpiry } = req.body;
+    const { username, password, licenseId, licenseExpiry } = req.body;
+    const userId = normalizeSafeKey(req.body?.userId);
+    const businessKey = normalizeSafeKey(req.body?.businessKey);
+    const role = normalizeRole(req.body?.role);
+    if (!userId || !businessKey || !role || typeof username !== "string" || typeof password !== "string") {
+      return res.status(400).json({ error: "Invalid registration payload" });
+    }
 
     // Check userId uniqueness
     const existing = await db.collection("users").findOne({ userId });
@@ -66,7 +73,12 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const db = getDb();
-    const { userId, password, role } = req.body;
+    const userId = normalizeSafeKey(req.body?.userId);
+    const role = normalizeRole(req.body?.role);
+    const { password } = req.body;
+    if (!userId || !role || typeof password !== "string") {
+      return res.status(400).json({ error: "Invalid login payload" });
+    }
 
     const userDoc = await db.collection("users").findOne({ userId });
     if (!userDoc) {

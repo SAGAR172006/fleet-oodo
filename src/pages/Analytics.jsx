@@ -49,7 +49,8 @@ export default function Analytics() {
         setMaintenance(maintenanceItems);
         setExpenses(expenseItems);
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error("Failed to load analytics data", err);
         if (active) {
           setTrips([]);
           setVehicles([]);

@@ -76,7 +76,8 @@ export default function Dashboard() {
         setMaintenance(maintenanceItems);
         setCargo(cargoItems);
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error("Failed to load dashboard data", err);
         if (active) {
           setTrips([]);
           setMaintenance([]);
