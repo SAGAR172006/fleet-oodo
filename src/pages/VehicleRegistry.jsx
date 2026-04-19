@@ -2,10 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import AppShell from "../components/AppShell";
 import { useSearchParams } from "react-router-dom";
-import {
-  collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp,
-} from "firebase/firestore";
-import { db } from "../firebase";
+import { createRecord, deleteRecord, listRecords, updateRecord } from "../api";
 
 const STATUS_OPTIONS = ["Active", "In Maintenance", "Retired"];
 
@@ -43,13 +40,23 @@ export default function VehicleRegistry() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (!user?.businessKey) return;
-    const unsub = onSnapshot(
-      query(collection(db, "vehicles"), where("businessKey", "==", user.businessKey)),
-      (snap) => setVehicles(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    );
-    return () => unsub();
+    if (!user?.businessKey) return undefined;
+    let active = true;
+    listRecords("vehicles", user.businessKey)
+      .then((items) => {
+        if (active) setVehicles(items);
+      })
+      .catch((e) => {
+        if (active) setError(e.message);
+      });
+    return () => { active = false; };
   }, [user]);
+
+  const refreshVehicles = async () => {
+    if (!user?.businessKey) return;
+    const items = await listRecords("vehicles", user.businessKey);
+    setVehicles(items);
+  };
 
   const openAdd = () => { setEditId(null); setForm(EMPTY_FORM); setError(""); setShowModal(true); };
   const openEdit = (v) => {
@@ -66,7 +73,10 @@ export default function VehicleRegistry() {
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this vehicle?")) return;
-    try { await deleteDoc(doc(db, "vehicles", id)); } catch (e) { setError(e.message); }
+    try {
+      await deleteRecord("vehicles", id);
+      await refreshVehicles();
+    } catch (e) { setError(e.message); }
   };
 
   const canSave = form.vehicleId && form.make && form.model && form.year;
@@ -77,10 +87,11 @@ export default function VehicleRegistry() {
     const data = { ...form, businessKey: user.businessKey };
     try {
       if (editId) {
-        await updateDoc(doc(db, "vehicles", editId), data);
+        await updateRecord("vehicles", editId, data);
       } else {
-        await addDoc(collection(db, "vehicles"), { ...data, createdAt: serverTimestamp() });
+        await createRecord("vehicles", data);
       }
+      await refreshVehicles();
       setShowModal(false);
     } catch (e) { setError(e.message); }
   };

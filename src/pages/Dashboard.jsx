@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import AppShell from "../components/AppShell";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
-import { db } from "../firebase";
+import { listRecords } from "../api";
 
 function StatusBadge({ status }) {
   const map = {
@@ -67,23 +66,25 @@ export default function Dashboard() {
   const [cargo, setCargo] = useState([]);
 
   useEffect(() => {
-    if (!user?.businessKey) return;
+    if (!user?.businessKey) return undefined;
     const bk = user.businessKey;
+    let active = true;
+    Promise.all([listRecords("trips", bk), listRecords("maintenance", bk), listRecords("cargo", bk)])
+      .then(([tripItems, maintenanceItems, cargoItems]) => {
+        if (!active) return;
+        setTrips(tripItems);
+        setMaintenance(maintenanceItems);
+        setCargo(cargoItems);
+      })
+      .catch(() => {
+        if (active) {
+          setTrips([]);
+          setMaintenance([]);
+          setCargo([]);
+        }
+      });
 
-    const unsubTrips = onSnapshot(
-      query(collection(db, "trips"), where("businessKey", "==", bk)),
-      (snap) => setTrips(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    );
-    const unsubMaint = onSnapshot(
-      query(collection(db, "maintenance"), where("businessKey", "==", bk)),
-      (snap) => setMaintenance(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    );
-    const unsubCargo = onSnapshot(
-      query(collection(db, "cargo"), where("businessKey", "==", bk)),
-      (snap) => setCargo(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    );
-
-    return () => { unsubTrips(); unsubMaint(); unsubCargo(); };
+    return () => { active = false; };
   }, [user]);
 
   const activeFleet  = trips.filter((t) => t.status === "on trip").length;

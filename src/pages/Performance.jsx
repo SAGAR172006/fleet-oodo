@@ -1,10 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import AppShell from "../components/AppShell";
-import {
-  collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp,
-} from "firebase/firestore";
-import { db } from "../firebase";
+import { createRecord, deleteRecord, listRecords, updateRecord } from "../api";
 
 function SummaryCard({ label, value, accent }) {
   const colors = { blue: "border-t-blue-400", yellow: "border-t-yellow-400", red: "border-t-red-400", green: "border-t-green-400" };
@@ -45,18 +42,30 @@ export default function Performance() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!user?.businessKey) return;
+    if (!user?.businessKey) return undefined;
     const bk = user.businessKey;
-    const unsubTrips = onSnapshot(
-      query(collection(db, "trips"), where("businessKey", "==", bk)),
-      (snap) => setTrips(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    );
-    const unsubDrivers = onSnapshot(
-      query(collection(db, "drivers"), where("businessKey", "==", bk)),
-      (snap) => setDrivers(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    );
-    return () => { unsubTrips(); unsubDrivers(); };
+    let active = true;
+    Promise.all([listRecords("trips", bk), listRecords("drivers", bk)])
+      .then(([tripItems, driverItems]) => {
+        if (!active) return;
+        setTrips(tripItems);
+        setDrivers(driverItems);
+      })
+      .catch((e) => {
+        if (active) setError(e.message);
+      });
+    return () => { active = false; };
   }, [user]);
+
+  const refreshData = async () => {
+    if (!user?.businessKey) return;
+    const [tripItems, driverItems] = await Promise.all([
+      listRecords("trips", user.businessKey),
+      listRecords("drivers", user.businessKey),
+    ]);
+    setTrips(tripItems);
+    setDrivers(driverItems);
+  };
 
   const driverMetrics = drivers.map((d) => {
     const driverTrips = trips.filter((t) => t.driver === d.name);
@@ -90,7 +99,10 @@ export default function Performance() {
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this driver?")) return;
-    try { await deleteDoc(doc(db, "drivers", id)); } catch (e) { setError(e.message); }
+    try {
+      await deleteRecord("drivers", id);
+      await refreshData();
+    } catch (e) { setError(e.message); }
   };
 
   const canSave = form.name && form.licenseId && form.licenseExpiry;
@@ -104,10 +116,11 @@ export default function Performance() {
         phone: form.phone, notes: form.notes, businessKey: user.businessKey,
       };
       if (editId) {
-        await updateDoc(doc(db, "drivers", editId), data);
+        await updateRecord("drivers", editId, data);
       } else {
-        await addDoc(collection(db, "drivers"), { ...data, createdAt: serverTimestamp() });
+        await createRecord("drivers", data);
       }
+      await refreshData();
       setShowModal(false);
     } catch (e) { setError(e.message); }
   };

@@ -3,7 +3,7 @@ const router = express.Router();
 const bcrypt = require("bcrypt");
 const fs = require("fs");
 const path = require("path");
-const { db } = require("../firebase-admin");
+const { getDb } = require("../mongo");
 
 const keysFile = path.join(__dirname, "../business-keys.json");
 const validKeys = JSON.parse(fs.readFileSync(keysFile, "utf-8"));
@@ -19,11 +19,12 @@ router.post("/validate-key", (req, res) => {
 // POST /api/auth/register
 router.post("/register", async (req, res) => {
   try {
+    const db = getDb();
     const { username, userId, role, businessKey, password, licenseId, licenseExpiry } = req.body;
 
     // Check userId uniqueness
-    const existing = await db.collection("users").where("userId", "==", userId).get();
-    if (!existing.empty) {
+    const existing = await db.collection("users").findOne({ userId });
+    if (existing) {
       return res.status(400).json({ error: "user-id already acquired, choose a different id" });
     }
 
@@ -49,7 +50,7 @@ router.post("/register", async (req, res) => {
       userData.licenseExpiry = licenseExpiry || "";
     }
 
-    await db.collection("users").add(userData);
+    await db.collection("users").insertOne(userData);
 
     res.json({
       success: true,
@@ -64,14 +65,13 @@ router.post("/register", async (req, res) => {
 // POST /api/auth/login
 router.post("/login", async (req, res) => {
   try {
+    const db = getDb();
     const { userId, password, role } = req.body;
 
-    const snapshot = await db.collection("users").where("userId", "==", userId).get();
-    if (snapshot.empty) {
+    const userDoc = await db.collection("users").findOne({ userId });
+    if (!userDoc) {
       return res.status(401).json({ error: "Invalid user ID or password" });
     }
-
-    const userDoc = snapshot.docs[0].data();
 
     if (userDoc.role !== role) {
       return res.status(401).json({ error: "Role does not match this user ID" });

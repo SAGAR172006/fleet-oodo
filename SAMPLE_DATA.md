@@ -1,6 +1,6 @@
 # 🌱 FleetFlow — Sample Data Reference
 
-This document explains the demo dataset that is seeded into Firestore by `backend/seed.js`, how to run the seed, and how to log in as each demo user.
+This document explains the demo dataset that is seeded into MongoDB by `backend/seed.js`, how to run the seed, and how to log in as each demo user.
 
 ---
 
@@ -23,7 +23,7 @@ This document explains the demo dataset that is seeded into Firestore by `backen
 
 ## 🚀 How to Seed the Database
 
-**Prerequisites:** Backend dependencies must be installed and Firebase credentials must be configured (see [README.md](README.md#4-firebase-configuration)).
+**Prerequisites:** Backend dependencies must be installed and MongoDB must be configured (see [README.md](README.md#4-mongodb-configuration)).
 
 ```bash
 cd backend
@@ -163,24 +163,24 @@ All demo accounts use business key **`BK-DEMO-999`** and password **`demo1234`**
 | Value | Location |
 |-------|---------|
 | **Business keys** | `backend/business-keys.json` — `["BK-FLEET-001", "BK-FLEET-002", "BK-FLEET-003", "BK-DEMO-999"]` |
-| **User accounts** | Firestore `users` collection, or register via the app UI at `/register` |
+| **User accounts** | MongoDB `users` collection, or register via the app UI at `/register` |
 | **Roles** | Defined in `src/pages/LoginPage.jsx` and `src/App.jsx` |
-| **Vehicles** | Firestore `vehicles` collection, or managed via the Vehicle Registry page |
-| **Trips** | Firestore `trips` collection, or managed via the Trip Dispatcher page |
+| **Vehicles** | MongoDB `vehicles` collection, or managed via the Vehicle Registry page |
+| **Trips** | MongoDB `trips` collection, or managed via the Trip Dispatcher page |
 | **Trip statuses** | `"on trip"`, `"completed"`, `"aborted"` |
 | **Maintenance types** | `"Scheduled"`, `"Emergency"`, `"Routine"` |
 | **Maintenance statuses** | `"Scheduled"`, `"In Progress"`, `"Resolved"`, `"Overdue"` |
 | **Expense categories** | `"Fuel"`, `"Maintenance"`, `"Driver Pay"`, `"Toll"`, `"Loading/Unloading"`, `"Miscellaneous"` |
-| **Drivers** | Firestore `drivers` collection, or managed via the Performance page |
+| **Drivers** | MongoDB `drivers` collection, or managed via the Performance page |
 | **Seed script** | `backend/seed.js` — run with `cd backend && npm run seed` |
 
 ---
 
 ## 📸 Screenshots
 
-> **Note:** Screenshots were captured from the running application in a demo environment without a live Firestore connection.  
-> Tables show the empty-state UI because no Firestore data was available at capture time.  
-> After running `npm run seed` against a real Firebase project, the seeded records will appear in each page's table.  
+> **Note:** Screenshots were captured from the running application in a demo environment without a live database connection.  
+> Tables show the empty-state UI because no data was available at capture time.  
+> After running `npm run seed` against a configured MongoDB database, the seeded records will appear in each page's table.  
 > See [Quick-Start Walkthrough](#-quick-start-walkthrough) for step-by-step instructions to reproduce with live data.
 
 ### Login Page

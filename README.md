@@ -1,6 +1,6 @@
 # 🚛 FleetFlow — Modular Fleet & Logistics Management System
 
-A full-stack, modular fleet and logistics management web application built with **React**, **Node.js/Express**, and **Firebase (Firestore)**. FleetFlow provides role-based dashboards for fleet managers, dispatchers, safety officers, and finance analysts to manage vehicles, trips, maintenance, expenses, driver performance, and analytics — all in real-time.
+A full-stack, modular fleet and logistics management web application built with **React**, **Node.js/Express**, and **MongoDB**. FleetFlow provides role-based dashboards for fleet managers, dispatchers, safety officers, and finance analysts to manage vehicles, trips, maintenance, expenses, driver performance, and analytics.
 
 ---
 
@@ -14,7 +14,7 @@ A full-stack, modular fleet and logistics management web application built with 
   - [1. Clone the Repository](#1-clone-the-repository)
   - [2. Frontend Setup](#2-frontend-setup)
   - [3. Backend Setup](#3-backend-setup)
-  - [4. Firebase Configuration](#4-firebase-configuration)
+  - [4. MongoDB Configuration](#4-mongodb-configuration)
   - [5. Start the Application](#5-start-the-application)
 - [Environment Variables](#-environment-variables)
 - [Troubleshooting — Common npm Errors & Version Conflicts](#-troubleshooting--common-npm-errors--version-conflicts)
@@ -45,12 +45,11 @@ A full-stack, modular fleet and logistics management web application built with 
 - **React 18** with Vite 5
 - **React Router DOM v6** — client-side routing
 - **Tailwind CSS v3** — utility-first styling
-- **Firebase SDK v10** — Firestore real-time listeners (client-side)
 - **Axios** — HTTP client for backend API calls
 
 ### Backend
 - **Node.js** with **Express v4**
-- **Firebase Admin SDK v11** — server-side Firestore access
+- **MongoDB Node.js Driver** — server-side MongoDB access
 - **bcrypt** — password hashing
 - **dotenv** — environment variable management
 - **cors** — cross-origin resource sharing
@@ -65,8 +64,9 @@ fleet-oodo/
 ├── backend/
 │   ├── routes/
 │   │   ├── auth.js              # Register, login, business key validation
-│   │   └── users.js             # User ID availability check
-│   ├── firebase-admin.js        # Firebase Admin SDK initialization
+│   │   ├── users.js             # User ID availability check
+│   │   └── data.js              # CRUD APIs for core modules
+│   ├── mongo.js                 # MongoDB initialization
 │   ├── business-keys.json       # Valid business keys for registration
 │   ├── server.js                # Express server entry point
 │   ├── package.json
@@ -89,7 +89,6 @@ fleet-oodo/
 │   │   ├── TripAndExpense.jsx
 │   │   ├── Performance.jsx
 │   │   └── Analytics.jsx
-│   ├── firebase.js              # Firebase client SDK config
 │   ├── index.css                # Tailwind directives + custom styles
 │   ├── main.jsx                 # React entry point
 │   └── App.jsx                  # Root component with route definitions
@@ -116,8 +115,7 @@ Before you begin, make sure you have the following installed:
 > **⚠️ Node.js v18+ is strongly recommended.** The `bcrypt` native module and Vite 5 require Node ≥ 18. Using Node 16 or below will cause build failures.
 
 You will also need:
-- A **Firebase project** with Firestore enabled
-- A **Firebase service account key** (JSON) for the backend
+- A running **MongoDB** instance (local or hosted)
 
 ---
 
@@ -162,36 +160,9 @@ cd ..
 
 ---
 
-### 4. Firebase Configuration
+### 4. MongoDB Configuration
 
-#### Frontend — `src/firebase.js`
-
-The file already contains Firebase config values. If you are using your own Firebase project:
-
-1. Go to [Firebase Console](https://console.firebase.google.com/) → your project → **Project Settings** → **Your Apps** (Web app).
-2. Copy the Firebase config object.
-3. Replace the values in `src/firebase.js` with your actual Firebase config:
-
-```javascript
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID",
-};
-```
-
-#### Backend — Service Account Key
-
-1. Go to [Firebase Console](https://console.firebase.google.com/) → your project → **Project Settings** → **Service Accounts**.
-2. Click **Generate New Private Key** and download the JSON file.
-3. Rename it to `fleet-33608-f60c8e3dd340.json` (or update the path in `backend/firebase-admin.js`) and place it in the `backend/` folder.
-
-> **🔐 NEVER commit this file to Git.** It is already listed in `.gitignore`.
-
-Alternatively, set up environment variables (see [Environment Variables](#-environment-variables)).
+Set the MongoDB connection string and database name in backend environment variables (see [Environment Variables](#-environment-variables)).
 
 #### Business Keys — `backend/business-keys.json`
 
@@ -245,16 +216,15 @@ This creates 4 demo users, 5 vehicles, 6 trips, 4 maintenance records, 8 expense
 
 ### Backend (`backend/.env`)
 
-Create a `backend/.env` file if you want to use environment-based Firebase credentials instead of the service account JSON file:
+Create a `backend/.env` file:
 
 ```env
 PORT=5000
-FIREBASE_PROJECT_ID=fleet-33608
-FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@fleet-33608.iam.gserviceaccount.com
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_KEY_HERE\n-----END PRIVATE KEY-----\n"
+MONGODB_URI=mongodb://127.0.0.1:27017
+MONGODB_DB_NAME=fleetflow
 ```
 
-> **Tip:** Wrap `FIREBASE_PRIVATE_KEY` in double quotes and keep the `\n` characters as-is.
+> **Tip:** For MongoDB Atlas, use your full SRV URL as `MONGODB_URI`.
 
 ---
 
@@ -529,5 +499,5 @@ This project is for educational/demonstration purposes.
 ---
 
 <p align="center">
-  Built with ❤️ using React, Express & Firebase
+  Built with ❤️ using React, Express & MongoDB
 </p>

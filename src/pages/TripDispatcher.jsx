@@ -2,10 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import AppShell from "../components/AppShell";
 import { useSearchParams } from "react-router-dom";
-import {
-  collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs, serverTimestamp, runTransaction,
-} from "firebase/firestore";
-import { db } from "../firebase";
+import { createRecord, deleteRecord, listRecords, updateRecord } from "../api";
 
 const STATUS_OPTIONS = ["on trip", "completed", "aborted"];
 
@@ -44,18 +41,30 @@ export default function TripDispatcher() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (!user?.businessKey) return;
+    if (!user?.businessKey) return undefined;
     const bk = user.businessKey;
-    const unsubTrips = onSnapshot(
-      query(collection(db, "trips"), where("businessKey", "==", bk)),
-      (snap) => setTrips(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    );
-    const unsubVehicles = onSnapshot(
-      query(collection(db, "vehicles"), where("businessKey", "==", bk)),
-      (snap) => setVehicles(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    );
-    return () => { unsubTrips(); unsubVehicles(); };
+    let active = true;
+    Promise.all([listRecords("trips", bk), listRecords("vehicles", bk)])
+      .then(([tripItems, vehicleItems]) => {
+        if (!active) return;
+        setTrips(tripItems);
+        setVehicles(vehicleItems);
+      })
+      .catch((e) => {
+        if (active) setError(e.message);
+      });
+    return () => { active = false; };
   }, [user]);
+
+  const refreshData = async () => {
+    if (!user?.businessKey) return;
+    const [tripItems, vehicleItems] = await Promise.all([
+      listRecords("trips", user.businessKey),
+      listRecords("vehicles", user.businessKey),
+    ]);
+    setTrips(tripItems);
+    setVehicles(vehicleItems);
+  };
 
   const openAdd = () => { setEditId(null); setForm(EMPTY_FORM); setError(""); setShowModal(true); };
   const openEdit = (t) => {
@@ -72,7 +81,10 @@ export default function TripDispatcher() {
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this trip?")) return;
-    try { await deleteDoc(doc(db, "trips", id)); } catch (e) { setError(e.message); }
+    try {
+      await deleteRecord("trips", id);
+      await refreshData();
+    } catch (e) { setError(e.message); }
   };
 
   const canSave = form.vehicle && form.driver && form.origin && form.destination && form.departureDatetime;
@@ -89,17 +101,11 @@ export default function TripDispatcher() {
         cargoWeight: form.cargoWeight ? Number(form.cargoWeight) : null,
       };
       if (editId) {
-        await updateDoc(doc(db, "trips", editId), data);
+        await updateRecord("trips", editId, data);
       } else {
-        await runTransaction(db, async (transaction) => {
-          const snap = await getDocs(query(collection(db, "trips"), where("businessKey", "==", user.businessKey)));
-          data.tripNumber = snap.size + 1;
-          data.dispatcherId = user.userId;
-          data.createdAt = serverTimestamp();
-          const newRef = doc(collection(db, "trips"));
-          transaction.set(newRef, data);
-        });
+        await createRecord("trips", { ...data, dispatcherId: user.userId });
       }
+      await refreshData();
       setShowModal(false);
     } catch (e) { setError(e.message); }
   };

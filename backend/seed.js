@@ -1,7 +1,7 @@
 /**
  * backend/seed.js
  *
- * Firestore seed script — populates the database with realistic demo data
+ * MongoDB seed script — populates the database with realistic demo data
  * for business key BK-DEMO-999.
  *
  * Usage:
@@ -9,7 +9,7 @@
  *   npm run seed
  */
 
-const { db } = require("./firebase-admin");
+const { connectToMongo, getDb } = require("./mongo");
 const bcrypt = require("bcrypt");
 
 const BUSINESS_KEY = "BK-DEMO-999";
@@ -17,21 +17,17 @@ const BUSINESS_KEY = "BK-DEMO-999";
 // ── helpers ────────────────────────────────────────────────────────────────
 
 async function clearCollection(collectionName) {
-  const snap = await db
-    .collection(collectionName)
-    .where("businessKey", "==", BUSINESS_KEY)
-    .get();
-  const batch = db.batch();
-  snap.docs.forEach((doc) => batch.delete(doc.ref));
-  await batch.commit();
+  const db = getDb();
+  const result = await db.collection(collectionName).deleteMany({ businessKey: BUSINESS_KEY });
   console.log(
-    `  🗑  Cleared ${snap.size} existing ${collectionName} record(s) for ${BUSINESS_KEY}`
+    `  🗑  Cleared ${result.deletedCount} existing ${collectionName} record(s) for ${BUSINESS_KEY}`
   );
 }
 
 // ── users ──────────────────────────────────────────────────────────────────
 
 async function seedUsers() {
+  const db = getDb();
   console.log("\n👤 Seeding users…");
 
   const password = "demo1234";
@@ -75,19 +71,13 @@ async function seedUsers() {
   ];
 
   // Clear existing users for BK-DEMO-999
-  const existingSnap = await db
-    .collection("users")
-    .where("businessKey", "==", BUSINESS_KEY)
-    .get();
-  const batch = db.batch();
-  existingSnap.docs.forEach((doc) => batch.delete(doc.ref));
-  await batch.commit();
+  const clearResult = await db.collection("users").deleteMany({ businessKey: BUSINESS_KEY });
   console.log(
-    `  🗑  Cleared ${existingSnap.size} existing users record(s) for ${BUSINESS_KEY}`
+    `  🗑  Cleared ${clearResult.deletedCount} existing users record(s) for ${BUSINESS_KEY}`
   );
 
   for (const user of users) {
-    await db.collection("users").add(user);
+    await db.collection("users").insertOne(user);
     console.log(`  ✅  User: ${user.username} (${user.userId}) — ${user.role}`);
   }
 }
@@ -95,6 +85,7 @@ async function seedUsers() {
 // ── vehicles ───────────────────────────────────────────────────────────────
 
 async function seedVehicles() {
+  const db = getDb();
   console.log("\n🚛 Seeding vehicles…");
   await clearCollection("vehicles");
 
@@ -162,7 +153,7 @@ async function seedVehicles() {
   ];
 
   for (const v of vehicles) {
-    await db.collection("vehicles").add(v);
+    await db.collection("vehicles").insertOne(v);
     console.log(`  ✅  Vehicle: ${v.vehicleId} — ${v.make} ${v.model} (${v.status})`);
   }
 }
@@ -170,6 +161,7 @@ async function seedVehicles() {
 // ── trips ──────────────────────────────────────────────────────────────────
 
 async function seedTrips() {
+  const db = getDb();
   console.log("\n🗺  Seeding trips…");
   await clearCollection("trips");
 
@@ -262,10 +254,10 @@ async function seedTrips() {
 
   const tripIds = {};
   for (const trip of tripsData) {
-    const ref = await db.collection("trips").add(trip);
-    tripIds[trip.tripNumber] = ref.id;
+    const ref = await db.collection("trips").insertOne(trip);
+    tripIds[trip.tripNumber] = ref.insertedId.toString();
     console.log(
-      `  ✅  Trip #${trip.tripNumber}: ${trip.origin} → ${trip.destination} (${trip.status}) [id: ${ref.id}]`
+      `  ✅  Trip #${trip.tripNumber}: ${trip.origin} → ${trip.destination} (${trip.status}) [id: ${ref.insertedId}]`
     );
   }
   return tripIds;
@@ -274,6 +266,7 @@ async function seedTrips() {
 // ── maintenance ────────────────────────────────────────────────────────────
 
 async function seedMaintenance() {
+  const db = getDb();
   console.log("\n🔧 Seeding maintenance…");
   await clearCollection("maintenance");
 
@@ -333,7 +326,7 @@ async function seedMaintenance() {
   ];
 
   for (const r of records) {
-    await db.collection("maintenance").add(r);
+    await db.collection("maintenance").insertOne(r);
     console.log(`  ✅  Maintenance: ${r.vehicle} — ${r.maintenanceType} (${r.status})`);
   }
 }
@@ -341,6 +334,7 @@ async function seedMaintenance() {
 // ── expenses ───────────────────────────────────────────────────────────────
 
 async function seedExpenses(tripIds) {
+  const db = getDb();
   console.log("\n💰 Seeding expenses…");
   await clearCollection("expenses");
 
@@ -428,7 +422,7 @@ async function seedExpenses(tripIds) {
   ];
 
   for (const e of expenses) {
-    await db.collection("expenses").add(e);
+    await db.collection("expenses").insertOne(e);
     console.log(`  ✅  Expense: ${e.category} ₹${e.amount} — ${e.description}`);
   }
 }
@@ -436,6 +430,7 @@ async function seedExpenses(tripIds) {
 // ── drivers ────────────────────────────────────────────────────────────────
 
 async function seedDrivers() {
+  const db = getDb();
   console.log("\n🧑‍✈️  Seeding drivers…");
   await clearCollection("drivers");
 
@@ -479,7 +474,7 @@ async function seedDrivers() {
   ];
 
   for (const d of drivers) {
-    await db.collection("drivers").add(d);
+    await db.collection("drivers").insertOne(d);
     console.log(`  ✅  Driver: ${d.name} (${d.licenseId})`);
   }
 }
@@ -492,6 +487,7 @@ async function main() {
   console.log("=".repeat(50));
 
   try {
+    await connectToMongo();
     await seedUsers();
     await seedVehicles();
     const tripIds = await seedTrips();

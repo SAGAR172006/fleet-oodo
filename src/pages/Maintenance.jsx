@@ -1,10 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import AppShell from "../components/AppShell";
-import {
-  collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp,
-} from "firebase/firestore";
-import { db } from "../firebase";
+import { createRecord, deleteRecord, listRecords, updateRecord } from "../api";
 
 const TYPE_OPTIONS = ["Scheduled", "Emergency", "Routine"];
 const STATUS_OPTIONS = ["Scheduled", "In Progress", "Resolved", "Overdue"];
@@ -38,18 +35,30 @@ export default function Maintenance() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!user?.businessKey) return;
+    if (!user?.businessKey) return undefined;
     const bk = user.businessKey;
-    const unsubMaint = onSnapshot(
-      query(collection(db, "maintenance"), where("businessKey", "==", bk)),
-      (snap) => setRecords(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    );
-    const unsubVehicles = onSnapshot(
-      query(collection(db, "vehicles"), where("businessKey", "==", bk)),
-      (snap) => setVehicles(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    );
-    return () => { unsubMaint(); unsubVehicles(); };
+    let active = true;
+    Promise.all([listRecords("maintenance", bk), listRecords("vehicles", bk)])
+      .then(([maintenanceItems, vehicleItems]) => {
+        if (!active) return;
+        setRecords(maintenanceItems);
+        setVehicles(vehicleItems);
+      })
+      .catch((e) => {
+        if (active) setError(e.message);
+      });
+    return () => { active = false; };
   }, [user]);
+
+  const refreshData = async () => {
+    if (!user?.businessKey) return;
+    const [maintenanceItems, vehicleItems] = await Promise.all([
+      listRecords("maintenance", user.businessKey),
+      listRecords("vehicles", user.businessKey),
+    ]);
+    setRecords(maintenanceItems);
+    setVehicles(vehicleItems);
+  };
 
   const openAdd = () => { setEditId(null); setForm(EMPTY_FORM); setError(""); setShowModal(true); };
   const openEdit = (m) => {
@@ -67,7 +76,10 @@ export default function Maintenance() {
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this maintenance record?")) return;
-    try { await deleteDoc(doc(db, "maintenance", id)); } catch (e) { setError(e.message); }
+    try {
+      await deleteRecord("maintenance", id);
+      await refreshData();
+    } catch (e) { setError(e.message); }
   };
 
   const canSave = form.vehicle && form.maintenanceType && form.description && form.scheduledDate;
@@ -85,10 +97,11 @@ export default function Maintenance() {
         resolvedDate: form.resolvedDate || null, businessKey: user.businessKey,
       };
       if (editId) {
-        await updateDoc(doc(db, "maintenance", editId), data);
+        await updateRecord("maintenance", editId, data);
       } else {
-        await addDoc(collection(db, "maintenance"), { ...data, createdAt: serverTimestamp() });
+        await createRecord("maintenance", data);
       }
+      await refreshData();
       setShowModal(false);
     } catch (e) { setError(e.message); }
   };

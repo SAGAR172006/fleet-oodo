@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { db } = require("../firebase-admin");
+const { getDb } = require("../mongo");
 
 // GET /api/users/check-userid?userId=xxx
 router.get("/check-userid", async (req, res) => {
@@ -8,8 +8,9 @@ router.get("/check-userid", async (req, res) => {
   if (!userId) return res.json({ available: false });
 
   try {
-    const snapshot = await db.collection("users").where("userId", "==", userId).get();
-    res.json({ available: snapshot.empty });
+    const db = getDb();
+    const existing = await db.collection("users").findOne({ userId });
+    res.json({ available: !existing });
   } catch (err) {
     res.status(500).json({ error: "Check failed" });
   }

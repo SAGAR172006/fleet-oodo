@@ -8,9 +8,10 @@ backend/node_modules/
 .env.production
 backend/.env
 
-# Firebase service account — NEVER commit this
+# Secret key files — NEVER commit these
 backend/serviceAccountKey.json
-backend/fleet-33608-f60c8e3dd340.json
+backend/*.pem
+backend/*.key
 
 # Build output
 dist/

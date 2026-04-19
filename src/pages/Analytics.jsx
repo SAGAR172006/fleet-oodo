@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import AppShell from "../components/AppShell";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
-import { db } from "../firebase";
+import { listRecords } from "../api";
 
 function KPICard({ label, value }) {
   return (
@@ -34,19 +33,31 @@ export default function Analytics() {
   const [expenses, setExpenses] = useState([]);
 
   useEffect(() => {
-    if (!user?.businessKey) return;
+    if (!user?.businessKey) return undefined;
     const bk = user.businessKey;
-    const unsubs = [
-      onSnapshot(query(collection(db, "trips"), where("businessKey", "==", bk)),
-        (s) => setTrips(s.docs.map((d) => ({ id: d.id, ...d.data() })))),
-      onSnapshot(query(collection(db, "vehicles"), where("businessKey", "==", bk)),
-        (s) => setVehicles(s.docs.map((d) => ({ id: d.id, ...d.data() })))),
-      onSnapshot(query(collection(db, "maintenance"), where("businessKey", "==", bk)),
-        (s) => setMaintenance(s.docs.map((d) => ({ id: d.id, ...d.data() })))),
-      onSnapshot(query(collection(db, "expenses"), where("businessKey", "==", bk)),
-        (s) => setExpenses(s.docs.map((d) => ({ id: d.id, ...d.data() })))),
-    ];
-    return () => unsubs.forEach((u) => u());
+    let active = true;
+    Promise.all([
+      listRecords("trips", bk),
+      listRecords("vehicles", bk),
+      listRecords("maintenance", bk),
+      listRecords("expenses", bk),
+    ])
+      .then(([tripItems, vehicleItems, maintenanceItems, expenseItems]) => {
+        if (!active) return;
+        setTrips(tripItems);
+        setVehicles(vehicleItems);
+        setMaintenance(maintenanceItems);
+        setExpenses(expenseItems);
+      })
+      .catch(() => {
+        if (active) {
+          setTrips([]);
+          setVehicles([]);
+          setMaintenance([]);
+          setExpenses([]);
+        }
+      });
+    return () => { active = false; };
   }, [user]);
 
   const totalFleet = vehicles.length;

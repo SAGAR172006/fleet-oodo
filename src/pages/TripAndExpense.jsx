@@ -1,10 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import AppShell from "../components/AppShell";
-import {
-  collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp,
-} from "firebase/firestore";
-import { db } from "../firebase";
+import { createRecord, deleteRecord, listRecords, updateRecord } from "../api";
 
 const CATEGORIES = ["Fuel", "Maintenance", "Driver Pay", "Toll", "Loading/Unloading", "Miscellaneous"];
 
@@ -31,18 +28,30 @@ export default function TripAndExpense() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!user?.businessKey) return;
+    if (!user?.businessKey) return undefined;
     const bk = user.businessKey;
-    const unsubTrips = onSnapshot(
-      query(collection(db, "trips"), where("businessKey", "==", bk)),
-      (snap) => setTrips(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    );
-    const unsubExpenses = onSnapshot(
-      query(collection(db, "expenses"), where("businessKey", "==", bk)),
-      (snap) => setExpenses(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    );
-    return () => { unsubTrips(); unsubExpenses(); };
+    let active = true;
+    Promise.all([listRecords("trips", bk), listRecords("expenses", bk)])
+      .then(([tripItems, expenseItems]) => {
+        if (!active) return;
+        setTrips(tripItems);
+        setExpenses(expenseItems);
+      })
+      .catch((e) => {
+        if (active) setError(e.message);
+      });
+    return () => { active = false; };
   }, [user]);
+
+  const refreshData = async () => {
+    if (!user?.businessKey) return;
+    const [tripItems, expenseItems] = await Promise.all([
+      listRecords("trips", user.businessKey),
+      listRecords("expenses", user.businessKey),
+    ]);
+    setTrips(tripItems);
+    setExpenses(expenseItems);
+  };
 
   const totalTrips = trips.length;
   const totalExpenses = expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
@@ -68,7 +77,10 @@ export default function TripAndExpense() {
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this expense?")) return;
-    try { await deleteDoc(doc(db, "expenses", id)); } catch (e) { setError(e.message); }
+    try {
+      await deleteRecord("expenses", id);
+      await refreshData();
+    } catch (e) { setError(e.message); }
   };
 
   const canSave = form.tripId && form.category && form.amount && form.date;
@@ -85,10 +97,11 @@ export default function TripAndExpense() {
         businessKey: user.businessKey,
       };
       if (editId) {
-        await updateDoc(doc(db, "expenses", editId), data);
+        await updateRecord("expenses", editId, data);
       } else {
-        await addDoc(collection(db, "expenses"), { ...data, loggedBy: user.userId, createdAt: serverTimestamp() });
+        await createRecord("expenses", { ...data, loggedBy: user.userId });
       }
+      await refreshData();
       setShowModal(false);
     } catch (e) { setError(e.message); }
   };
