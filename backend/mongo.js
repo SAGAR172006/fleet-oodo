@@ -13,7 +13,12 @@ async function connectToMongo() {
     client = new MongoClient(MONGODB_URI);
     await client.connect();
     db = client.db(MONGODB_DB_NAME);
-    await db.collection("users").createIndex({ userId: 1 }, { unique: true });
+    try {
+      await db.collection("users").createIndex({ userId: 1 }, { unique: true });
+      await db.collection("trips").createIndex({ businessKey: 1, tripNumber: 1 }, { unique: true, sparse: true });
+    } catch (indexErr) {
+      throw new Error(`MongoDB index initialization failed: ${indexErr.message}`);
+    }
     return db;
   } catch (err) {
     throw new Error(
