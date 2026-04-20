@@ -9,7 +9,30 @@
  *   npm run seed
  */
 
-const { db } = require("./firebase-admin");
+require("dotenv").config();
+
+console.log("\n🔍 Checking Firebase configuration...");
+console.log(`Project ID: ${process.env.FIREBASE_PROJECT_ID || 'NOT SET'}`);
+console.log(`Client Email: ${process.env.FIREBASE_CLIENT_EMAIL ? '✅ SET' : '❌ NOT SET'}`);
+console.log(`Private Key: ${process.env.FIREBASE_PRIVATE_KEY ? '✅ SET' : '❌ NOT SET'}`);
+console.log("");
+
+let db, admin;
+try {
+  const firebaseAdmin = require("./firebase-admin");
+  db = firebaseAdmin.db;
+  admin = firebaseAdmin.admin;
+  console.log("✅ Firebase Admin SDK loaded successfully\n");
+} catch (error) {
+  console.error("❌ Failed to load Firebase Admin SDK:", error.message);
+  console.error("\n📋 Please check:");
+  console.error("1. backend/.env file exists and has Firebase credentials");
+  console.error("2. Firebase project exists: fleet-6a128");
+  console.error("3. Firestore Database is enabled in Firebase Console");
+  console.error("\nSee BACKEND_SETUP_GUIDE.md for help\n");
+  process.exit(1);
+}
+
 const bcrypt = require("bcrypt");
 
 const BUSINESS_KEY = "BK-DEMO-999";
@@ -492,6 +515,12 @@ async function main() {
   console.log("=".repeat(50));
 
   try {
+    // Test Firestore connection first
+    console.log("\n🔌 Testing Firestore connection...");
+    await db.collection("_test").doc("_test").set({ test: true });
+    await db.collection("_test").doc("_test").delete();
+    console.log("✅ Firestore connection successful\n");
+
     await seedUsers();
     await seedVehicles();
     const tripIds = await seedTrips();
@@ -507,9 +536,36 @@ async function main() {
     console.log("   bob-dispatch   → Dispatcher");
     console.log("   carol-safety   → Safety Officer");
     console.log("   dave-finance   → Finance Analyst");
+    console.log("\n🎯 Now you can login at: http://localhost:5173");
+    console.log("   User ID: alice-mgr");
+    console.log("   Password: demo1234");
+    console.log("   Role: Fleet Manager\n");
     process.exit(0);
   } catch (err) {
     console.error("\n❌ Seeding failed:", err.message);
+    console.error("\n📋 Common issues:");
+    console.error("1. Firestore Database not enabled in Firebase Console");
+    console.error("   → Go to https://console.firebase.google.com/");
+    console.error("   → Select project: fleet-6a128");
+    console.error("   → Click 'Firestore Database' in sidebar");
+    console.error("   → Click 'Create database' if not enabled");
+    console.error("   → Choose 'Start in test mode'");
+    console.error("   → Select a location");
+    console.error("   → Click 'Enable'");
+    console.error("\n2. Firebase credentials incorrect");
+    console.error("   → Check backend/.env has correct credentials");
+    console.error("   → Run: node setup-firebase.js");
+    console.error("\n3. Network/firewall issues");
+    console.error("   → Check internet connection");
+    console.error("   → Check if firewall blocks Firebase\n");
+    
+    if (err.code) {
+      console.error(`Error code: ${err.code}`);
+    }
+    if (err.stack) {
+      console.error("\nFull error:");
+      console.error(err.stack);
+    }
     process.exit(1);
   }
 }

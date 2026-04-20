@@ -1,12 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
-const fs = require("fs");
-const path = require("path");
 const { db } = require("../firebase-admin");
 
-const keysFile = path.join(__dirname, "../business-keys.json");
-const validKeys = JSON.parse(fs.readFileSync(keysFile, "utf-8"));
+// Get valid business keys from environment variable (more secure)
+// Fallback to hardcoded keys for development only
+const validKeys = process.env.VALID_BUSINESS_KEYS 
+  ? process.env.VALID_BUSINESS_KEYS.split(',').map(k => k.trim())
+  : ["BK-FLEET-001", "BK-FLEET-002", "BK-FLEET-003", "BK-DEMO-999"];
 
 // POST /api/auth/validate-key
 router.post("/validate-key", (req, res) => {
